@@ -75,10 +75,11 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
                     count += 1
             try:
                 idf = np.log2(total_docs / count)
+                self.idf_dict[term] = idf
             except ZeroDivisionError:
                 print(term)
                 breakpoint()
-            self.idf_dict[term] = idf
+
         return self.idf_dict
 
     def get_idf_dict(self):
