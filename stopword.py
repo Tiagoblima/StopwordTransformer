@@ -1,4 +1,4 @@
-#The following code strips accents and separate words from punctuation
+# The following code strips accents and separate words from punctuation
 from collections import Counter, defaultdict
 
 import numpy as np
@@ -7,8 +7,11 @@ from sklearn.base import ClassifierMixin, BaseEstimator, TransformerMixin
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted, check_array
 import warnings
+
 warnings.filterwarnings("ignore", category=FutureWarning)
 import unicodedata, nltk
+
+
 # Converts the unicode file to ascii
 def unicode_to_ascii(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s)
@@ -16,6 +19,8 @@ def unicode_to_ascii(s):
 
 
 import re
+
+
 def preprocess_sentence(w):
     w = unicode_to_ascii(w.strip().lower())
 
@@ -32,6 +37,7 @@ def preprocess_sentence(w):
 
     return w
 
+
 class StopWordTransformer(BaseEstimator, TransformerMixin):
     """ An example transformer that returns the element-wise square root..
 
@@ -46,7 +52,7 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
         The shape the data passed to :meth:`fit`
     """
 
-    def __init__(self,singletons=True, threshold=None, exclusion_ratio=0.02):
+    def __init__(self, singletons=True, threshold=None, exclusion_ratio=0.02):
 
         self.freq_dict = {}
         self.stopwords = []
@@ -68,7 +74,7 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
                 if re.search(term, document):
                     count += 1
             try:
-                idf = np.log2(total_docs/count)
+                idf = np.log2(total_docs / count)
             except ZeroDivisionError:
                 print(term)
                 breakpoint()
@@ -77,23 +83,24 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
 
     def get_idf_dict(self):
         return self.idf_dict
+
     def get_tf_dict(self):
         return self.freq_dict
 
     def add_high_tf(self):
         self.freq_dict = Counter(' '.join(self.X_).split())
         terms_list = np.array(list(self.freq_dict.keys()))
-        #Calculating the tf array
-        tf_array = np.array(list(self.freq_dict.values()))/len(self.freq_dict.items())
+        # Calculating the tf array
+        tf_array = np.array(list(self.freq_dict.values())) / len(self.freq_dict.items())
 
-        #Adding high frequency terms to stopwords
-        ordered_idx = np.argsort(tf_array)[:-(self.threshold+1):-1]
+        # Adding high frequency terms to stopwords
+        ordered_idx = np.argsort(tf_array)[:-(self.threshold + 1):-1]
 
         self.stopwords.extend(terms_list[ordered_idx].tolist())
 
     def calculate_threshold(self, ratio=0.01):
 
-        threshold = int(len(' '.join(self.X_).split())*ratio)
+        threshold = int(len(' '.join(self.X_).split()) * ratio)
         if threshold is 0:
             threshold = 1
         return threshold
@@ -106,7 +113,8 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
 
     def add_singlenton(self):
         self.stopwords.extend([word for word, freq in
-                               Counter(' '.join(self.X_).split()).items() if freq==1])
+                               Counter(' '.join(self.X_).split()).items() if freq == 1])
+
     def get_stopwords(self):
         return self.stopwords
 
@@ -133,9 +141,7 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
         self.vocab = set(' '.join(X).split())
 
         if not self.threshold:
-
             self.threshold = self.calculate_threshold()
-
 
         self.add_high_tf()
         if self.singletons:
@@ -167,7 +173,7 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
         self.stopwords = set(self.stopwords)
         new_corpus = []
 
-        remove_stopwords = lambda doc:' '.join([word for word in doc[0].split() if word not in self.stopwords])
+        remove_stopwords = lambda doc: ' '.join([word for word in doc[0].split() if word not in self.stopwords])
         X = np.array(list(map(remove_stopwords, X)))
 
         return X
