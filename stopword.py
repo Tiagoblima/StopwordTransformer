@@ -70,7 +70,7 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
                 if re.search(term, document):
                     count += 1
 
-            idf = np.log2(total_docs/count)
+            idf = np.log2(total_docs / count)
             self.idf_dict[term] = idf
         return self.idf_dict
 
