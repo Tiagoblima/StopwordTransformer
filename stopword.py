@@ -63,7 +63,7 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
         self.ratio = exclusion_ratio
 
     def count_term_in_doc(self):
-        total_docs = len(corpus)
+        total_docs = len(self.X_)
         for term in self.vocab:
             count = 0
             for document in self.X_:
