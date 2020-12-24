@@ -63,23 +63,15 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
         self.ratio = exclusion_ratio
 
     def count_term_in_doc(self):
-        """
-        It counts in how many documents the term  in the vocabulary appears.
-        """
-        total_docs = self.X_.shape[0]
-
+        total_docs = len(corpus)
         for term in self.vocab:
             count = 0
             for document in self.X_:
                 if re.search(term, document):
                     count += 1
-            try:
-                idf = np.log2(total_docs / count)
-                self.idf_dict[term] = idf
-            except ZeroDivisionError:
-                print(term)
-                breakpoint()
 
+            idf = np.log2(total_docs/count)
+            self.idf_dict[term] = idf
         return self.idf_dict
 
     def get_idf_dict(self):
