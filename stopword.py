@@ -1,5 +1,6 @@
 # The following code strips accents and separate words from punctuation
 from collections import Counter, defaultdict
+from multiprocessing import Pool
 
 import numpy as np
 from scipy.special import softmax
@@ -62,16 +63,20 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
         self.threshold = threshold
         self.ratio = exclusion_ratio
 
-    def count_term_in_doc(self):
-        total_docs = len(self.X_)
-        for term in self.vocab:
-            count = 0
-            for document in self.X_:
-                if re.search(term, document):
-                    count += 1
+    def calculate_idf(self, count):
+        return np.log2(self.X_.size / count)
 
-            idf = np.log2(total_docs / count)
-            self.idf_dict[term] = idf
+    def find_in_document(self, term):
+        count = 0
+        for document in self.X_:
+            if re.search(re.escape(term), document):
+                count += 1
+        return term, self.calculate_idf(count)
+
+    def count_term_in_doc(self):
+
+        p = Pool(5)
+        self.idf_dict = dict(p.map(self.find_in_document, self.vocab))
         return self.idf_dict
 
     def get_idf_dict(self):
@@ -104,7 +109,7 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
 
         self.stopwords.extend([word for word, _ in idf_orderd[:self.threshold]])
 
-    def add_singlenton(self):
+    def add_singleton(self):
         self.stopwords.extend([word for word, freq in
                                Counter(' '.join(self.X_).split()).items() if freq == 1])
 
@@ -138,7 +143,7 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
 
         self.add_high_tf()
         if self.singletons:
-            self.add_singlenton()
+            self.add_singleton()
         self.add_low_idf()
         # Return the transformer
         return self
@@ -163,10 +168,8 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
         # Input validation
         X = np.array(X, dtype=str).reshape(-1, 1).copy()
         X = check_array(X)
-        self.stopwords = set(self.stopwords)
-        new_corpus = []
 
-        remove_stopwords = lambda doc: ' '.join([word for word in doc[0].split() if word not in self.stopwords])
+        remove_stopwords = lambda doc: ' '.join([word for word in doc[0].split() if word not in set(self.stopwords)])
         X = np.array(list(map(remove_stopwords, X)))
 
         return X
