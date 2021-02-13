@@ -1,18 +1,16 @@
 # The following code strips accents and separate words from punctuation
-from collections import Counter, defaultdict
+import warnings
+from collections import Counter
 from multiprocessing import Pool
 
 import numpy as np
-from scipy.special import softmax
-from sklearn.base import ClassifierMixin, BaseEstimator, TransformerMixin
-from sklearn.utils.multiclass import unique_labels
-from sklearn.utils.validation import check_is_fitted, check_array
-import warnings
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.utils.validation import check_is_fitted, check_array
 
 warnings.filterwarnings("ignore", category=FutureWarning)
-import unicodedata, nltk
+import unicodedata
 
 
 # Converts the unicode file to ascii
@@ -65,6 +63,7 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
         self.threshold = threshold
         self.ratio = exclusion_ratio
         self.tf_matrix = np.array([[]])
+        self.counter = CountVectorizer()
 
     def calculate_idf(self, count):
         return np.log2(self.X_.size / count)
@@ -90,15 +89,13 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
 
     def add_high_tf(self):
 
-        counter = CountVectorizer()
-
         # Calculating the tf array
-        self.tf_matrix = counter.fit_transform(self.X_).toarray()
+        self.tf_matrix = self.counter.fit_transform(self.X_).toarray()
 
         # Adding high frequency terms to stopwords
-        ordered_idx = np.argsort(self.tf_matrix.sum(axis=0))[:-(self.threshold + 1):-1]
+        ordered_idx = (-self.tf_matrix.sum(axis=0)).argsort()[:self.threshold]
 
-        self.stopwords.extend(counter.get_feature_names()[ordered_idx].tolist())
+        self.stopwords.extend(np.array(self.counter.get_feature_names())[ordered_idx].tolist())
 
     def calculate_threshold(self, ratio=0.01):
 
@@ -109,13 +106,13 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
 
     def add_low_idf(self):
 
-        tfidf = TfidfVectorizer()
+        tfidf = TfidfTransformer()
 
         tfidf_matrix = tfidf.fit_transform(self.tf_matrix).toarray()
-        idf_array = tfidf_matrix.sum(axis=0)/self.tf_matrix.sum(axis=0)
-        ordered_idx = np.argsort(idf_array)[:-(self.threshold + 1):-1]
+        idf_array = tfidf_matrix.sum(axis=0) / self.tf_matrix.sum(axis=0)
+        ordered_idx = idf_array.argsort()
 
-        self.stopwords.extend(tfidf.get_feature_names()[ordered_idx].tolist())
+        self.stopwords.extend(np.array(self.counter.get_feature_names())[ordered_idx].tolist())
 
     def add_singleton(self):
         self.stopwords.extend([word for word, freq in
