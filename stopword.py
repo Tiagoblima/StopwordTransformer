@@ -146,7 +146,7 @@ class StopWordTransformer(BaseEstimator, TransformerMixin):
 
         self.vocab = set(' '.join(X).split())
 
-        self.X = np.array(X, dtype=str).reshape(-1, 1).copy()
+        self.X_ = np.array(X, dtype=str).reshape(-1, 1).copy()
 
         if not self.threshold:
             self.threshold = self.calculate_threshold()
